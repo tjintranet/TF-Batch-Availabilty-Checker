@@ -87,14 +87,15 @@
             }
 
             const dropZone = document.getElementById('dropZone');
-			const fileInput = document.getElementById('fileInput');
-			const progressBar = document.getElementById('progressBar');
-			const progressBarInner = progressBar.querySelector('.progress-bar');
-			const results = document.getElementById('results');
-			const validationList = document.getElementById('validationList');
-			const validCount = document.getElementById('validCount');
-			const invalidCount = document.getElementById('invalidCount');
-			const downloadButton = document.getElementById('downloadResults'); // Add this line
+            const fileInput = document.getElementById('fileInput');
+            const progressBar = document.getElementById('progressBar');
+            const progressBarInner = progressBar.querySelector('.progress-bar');
+            const results = document.getElementById('results');
+            const validationList = document.getElementById('validationList');
+            const validCount = document.getElementById('validCount');
+            const invalidCount = document.getElementById('invalidCount');
+            const downloadButton = document.getElementById('downloadResults');
+            let currentValidations = []; // Store validations for download
 
             function normalizeDimension(value) {
                 if (value === null || value === undefined) return '';
@@ -148,10 +149,10 @@
             }
 
             function displayResults(validations) {
+                currentValidations = validations; // Store validations
                 results.style.display = 'block';
                 validationList.innerHTML = '';
-                
-                document.getElementById('downloadResults').style.display = 'inline-flex';
+                downloadButton.style.display = 'inline-flex'; // Show download button
                 
                 let validItems = 0;
                 let invalidItems = 0;
@@ -238,6 +239,50 @@
                 reader.readAsArrayBuffer(file);
             }
 
+            function downloadResults() {
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Format data for export
+                const exportData = currentValidations.map(item => ({
+                    'ISBN': item.isbn,
+                    'Description': item.description,
+                    'Width (mm)': item.width,
+                    'Height (mm)': item.height,
+                    'GSM': item.gsm,
+                    'Binding': item.binding,
+                    'Color': item.color,
+                    'Valid': item.validation.isValid ? 'Yes' : 'No',
+                    'Message': item.validation.message
+                }));
+
+                // Create worksheet
+                const ws = XLSX.utils.json_to_sheet(exportData);
+
+                // Set column widths
+                const colWidths = [
+                    { wch: 15 },  // ISBN
+                    { wch: 30 },  // Description
+                    { wch: 10 },  // Width
+                    { wch: 10 },  // Height
+                    { wch: 8 },   // GSM
+                    { wch: 10 },  // Binding
+                    { wch: 8 },   // Color
+                    { wch: 8 },   // Valid
+                    { wch: 50 }   // Message
+                ];
+                ws['!cols'] = colWidths;
+
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(wb, ws, "Validation Results");
+
+                // Generate timestamp for filename
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+
+                // Save file
+                XLSX.writeFile(wb, `validation-results-${timestamp}.xlsx`);
+            }
+
             // Drag and drop handlers
             dropZone.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -266,6 +311,9 @@
                 }
             });
 
+            // Add click handler for download button
+            downloadButton.addEventListener('click', downloadResults);
+
             // Prevent default drag behaviors
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 document.body.addEventListener(eventName, (e) => {
@@ -274,8 +322,6 @@
                 });
             });
         });
-        
-        
     </script>
 </body>
 </html>
