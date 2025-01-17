@@ -1,0 +1,62 @@
+.validation-results {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.result-item {
+    transition: all 0.3s ease;
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+.drag-area {
+    border: 2px dashed #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.drag-area.dragover {
+    background: #e9ecef;
+    border-color: #0d6efd;
+}
+
+.progress {
+    display: none;
+    margin-top: 10px;
+}
+
+.template-link {
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.template-link:hover {
+    color: #0d6efd;
+}
+
+.validation-status {
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.badge {
+    font-size: 0.9em;
+    padding: 0.5em 0.8em;
+}
