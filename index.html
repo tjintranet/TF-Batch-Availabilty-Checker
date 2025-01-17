@@ -47,23 +47,23 @@
                         </div>
 
 <!-- Results Area -->
-                        <div id="results" style="display: none;">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="mb-0">Validation Results</h5>
-                                <div class="d-flex gap-2 align-items-center">
-                                    <button id="downloadResults" class="btn btn-sm btn-outline-primary me-2" style="display: none;">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
-                                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                                        </svg>
-                                        Download Results
-                                    </button>
-                                    <span class="badge bg-success" id="validCount">0 Valid</span>
-                                    <span class="badge bg-danger" id="invalidCount">0 Invalid</span>
-                                </div>
-                            </div>
-                            <div class="validation-results" id="validationList"></div>
-                        </div>
+<div id="results" style="display: none;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Validation Results</h5>
+        <div class="d-flex gap-2 align-items-center">
+            <button id="downloadResults" class="btn btn-sm btn-outline-primary me-2" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Download Results
+            </button>
+            <span class="badge bg-success" id="validCount">0 Valid</span>
+            <span class="badge bg-danger" id="invalidCount">0 Invalid</span>
+        </div>
+    </div>
+    <div class="validation-results" id="validationList"></div>
+</div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
@@ -87,13 +87,14 @@
             }
 
             const dropZone = document.getElementById('dropZone');
-            const fileInput = document.getElementById('fileInput');
-            const progressBar = document.getElementById('progressBar');
-            const progressBarInner = progressBar.querySelector('.progress-bar');
-            const results = document.getElementById('results');
-            const validationList = document.getElementById('validationList');
-            const validCount = document.getElementById('validCount');
-            const invalidCount = document.getElementById('invalidCount');
+			const fileInput = document.getElementById('fileInput');
+			const progressBar = document.getElementById('progressBar');
+			const progressBarInner = progressBar.querySelector('.progress-bar');
+			const results = document.getElementById('results');
+			const validationList = document.getElementById('validationList');
+			const validCount = document.getElementById('validCount');
+			const invalidCount = document.getElementById('invalidCount');
+			const downloadButton = document.getElementById('downloadResults'); // Add this line
 
             function normalizeDimension(value) {
                 if (value === null || value === undefined) return '';
@@ -149,6 +150,8 @@
             function displayResults(validations) {
                 results.style.display = 'block';
                 validationList.innerHTML = '';
+                
+                document.getElementById('downloadResults').style.display = 'inline-flex';
                 
                 let validItems = 0;
                 let invalidItems = 0;
@@ -271,97 +274,6 @@
                 });
             });
         });
-        
-        let currentValidations = []; // Store validations for download
-
-            function downloadResults() {
-                // Create workbook
-                const wb = XLSX.utils.book_new();
-                
-                // Format data for export
-                const exportData = currentValidations.map(item => ({
-                    'ISBN': item.isbn,
-                    'Description': item.description,
-                    'Width (mm)': item.width,
-                    'Height (mm)': item.height,
-                    'GSM': item.gsm,
-                    'Binding': item.binding,
-                    'Color': item.color,
-                    'Valid': item.validation.isValid ? 'Yes' : 'No',
-                    'Message': item.validation.message
-                }));
-
-                // Create worksheet
-                const ws = XLSX.utils.json_to_sheet(exportData);
-
-                // Set column widths
-                const colWidths = [
-                    { wch: 15 },  // ISBN
-                    { wch: 30 },  // Description
-                    { wch: 10 },  // Width
-                    { wch: 10 },  // Height
-                    { wch: 8 },   // GSM
-                    { wch: 10 },  // Binding
-                    { wch: 8 },   // Color
-                    { wch: 8 },   // Valid
-                    { wch: 50 }   // Message
-                ];
-                ws['!cols'] = colWidths;
-
-                // Add worksheet to workbook
-                XLSX.utils.book_append_sheet(wb, ws, "Validation Results");
-
-                // Generate timestamp for filename
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-
-                // Save file
-                XLSX.writeFile(wb, `validation-results-${timestamp}.xlsx`);
-            }
-
-            // Add click handler for download button
-            const downloadButton = document.getElementById('downloadResults');
-            downloadButton.addEventListener('click', downloadResults);
-
-            // Update displayResults function to store current validations
-            function displayResults(validations) {
-                currentValidations = validations; // Store validations
-                results.style.display = 'block';
-                validationList.innerHTML = '';
-                downloadButton.style.display = 'inline-flex'; // Show download button
-                
-                let validItems = 0;
-                let invalidItems = 0;
-
-                validations.forEach((item, index) => {
-                    const result = item.validation;
-                    if (result.isValid) validItems++; else invalidItems++;
-
-                    const div = document.createElement('div');
-                    div.className = `result-item alert alert-${result.isValid ? 'success' : 'danger'} mb-2`;
-                    div.style.animationDelay = `${index * 0.05}s`;
-                    div.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${item.isbn}</strong> - ${item.description}
-                            </div>
-                            <span class="badge bg-${result.isValid ? 'success' : 'danger'}">
-                                ${result.isValid ? 'Valid' : 'Invalid'}
-                            </span>
-                        </div>
-                        <div class="mt-1 small">
-                            ${result.message}
-                        </div>
-                        <div class="mt-1 small text-muted">
-                            Specs: ${item.width}×${item.height}mm, ${item.gsm}gsm, ${item.binding}, Color: ${item.color}
-                        </div>
-                    `;
-                    validationList.appendChild(div);
-                });
-
-                validCount.textContent = `${validItems} Valid`;
-                invalidCount.textContent = `${invalidItems} Invalid`;
-            }
-        
     </script>
 </body>
 </html>
