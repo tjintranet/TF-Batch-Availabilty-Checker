@@ -14,14 +14,14 @@ const CONFIG = {
                 '172x210', '174x246', '178x254', '189x246', '191x235',
                 '204x254', '210x280', '216x279', '210x297'
             ]),
-            colors: new Set(['1']),
+            validColors: new Set(['1']), // Only color 1 for 80gsm
             bindings: new Set(['Cased', 'Limp'])
         },
         90: {
             dimensions: new Set([
                 '152x229', '156x234', '174x246', '178x254'
             ]),
-            colors: new Set(['4', 'Scattercolor', '4 or Scattercolour']),
+            validColors: new Set(['4']), // Only color 4 for 90gsm
             bindings: new Set(['Cased', 'Limp'])
         }
     }
