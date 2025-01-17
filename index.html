@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Trim Size Validator</title>
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h4 class="card-title mb-0">Batch Trim Size Validator</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- File Upload Area -->
+                        <div class="drag-area mb-4" id="dropZone">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-file-earmark-spreadsheet mb-3 text-primary" viewBox="0 0 16 16">
+                                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V9H3V2a1 1 0 0 1 1-1h5.5v2zM3 12v-2h2v2H3zm3 0v-2h3v2H6zm4 0v-2h3v2h-3z"/>
+                            </svg>
+                            <p class="mb-2">Drag and drop Excel file here or</p>
+                            <div class="mb-3">
+                                <input type="file" id="fileInput" accept=".xlsx, .xls" class="d-none">
+                                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                    Choose File
+                                </button>
+                            </div>
+                            <div class="small text-muted">
+                                <a href="examples/template.xlsx" download class="text-decoration-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
+                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                                    </svg>
+                                    Download Example Template
+                                </a>
+                            </div>
+                            <div class="progress mt-3" id="progressBar">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
+                            </div>
+                        </div>
+
+                        <!-- Results Area -->
+                        <div id="results" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Validation Results</h5>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span class="badge bg-success" id="validCount">0 Valid</span>
+                                    <span class="badge bg-danger" id="invalidCount">0 Invalid</span>
+                                </div>
+                            </div>
+                            <div class="validation-results" id="validationList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <!-- Load config before main script -->
+    <script src="js/config.js"></script>
+    <!-- Main application script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if config is loaded
+            if (typeof CONFIG === 'undefined') {
+                console.error('Error: CONFIG is not loaded. Check that js/config.js is in the correct location.');
+                alert('Error: Configuration not loaded. Please check the console for details.');
+                return;
+            }
+
+            // Check if XLSX is loaded
+            if (typeof XLSX === 'undefined') {
+                console.error('Error: XLSX library not loaded. Please check your internet connection.');
+                alert('Error: Required library not loaded. Please check the console for details.');
+                return;
+            }
+
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const progressBar = document.getElementById('progressBar');
+            const progressBarInner = progressBar.querySelector('.progress-bar');
+            const results = document.getElementById('results');
+            const validationList = document.getElementById('validationList');
+            const validCount = document.getElementById('validCount');
+            const invalidCount = document.getElementById('invalidCount');
+
+            function normalizeDimension(value) {
+                if (value === null || value === undefined) return '';
+                return String(value).trim();
+            }
+
+            function validateSize(width, height, paperWeight, binding, color) {
+                const normalizedWidth = normalizeDimension(width);
+                const normalizedHeight = normalizeDimension(height);
+                const dimension = `${normalizedWidth}x${normalizedHeight}`;
+                
+                if (!CONFIG.PAPER_WEIGHTS[paperWeight]) {
+                    return {
+                        isValid: false,
+                        message: `Invalid paper weight: ${paperWeight}`
+                    };
+                }
+
+                const paperWeightConfig = CONFIG.PAPER_WEIGHTS[paperWeight];
+                const validCombos = paperWeightConfig.dimensions;
+                const validColors = paperWeightConfig.validColors;
+
+                // Check color compatibility
+                if (!validColors.has(String(color))) {
+                    return {
+                        isValid: false,
+                        message: `Invalid color ${color} for ${paperWeight}gsm paper`
+                    };
+                }
+
+                // Check dimension compatibility
+                const isValidDimension = validCombos.has(dimension);
+                
+                return {
+                    isValid: isValidDimension,
+                    message: isValidDimension 
+                        ? `Size ${normalizedWidth}mm × ${normalizedHeight}mm is valid for ${binding} binding with ${paperWeight}gsm and color ${color}`
+                        : `Size ${normalizedWidth}mm × ${normalizedHeight}mm is not valid for ${binding} binding with ${paperWeight}gsm`
+                };
+            }
+
+            function updateProgress(percent) {
+                progressBar.style.display = 'block';
+                progressBarInner.style.width = `${percent}%`;
+                if (percent === 100) {
+                    setTimeout(() => {
+                        progressBar.style.display = 'none';
+                        progressBarInner.style.width = '0%';
+                    }, 1000);
+                }
+            }
+
+            function displayResults(validations) {
+                results.style.display = 'block';
+                validationList.innerHTML = '';
+                
+                let validItems = 0;
+                let invalidItems = 0;
+
+                validations.forEach((item, index) => {
+                    const result = item.validation;
+                    if (result.isValid) validItems++; else invalidItems++;
+
+                    const div = document.createElement('div');
+                    div.className = `result-item alert alert-${result.isValid ? 'success' : 'danger'} mb-2`;
+                    div.style.animationDelay = `${index * 0.05}s`;
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${item.isbn}</strong> - ${item.description}
+                            </div>
+                            <span class="badge bg-${result.isValid ? 'success' : 'danger'}">
+                                ${result.isValid ? 'Valid' : 'Invalid'}
+                            </span>
+                        </div>
+                        <div class="mt-1 small">
+                            ${result.message}
+                        </div>
+                        <div class="mt-1 small text-muted">
+                            Specs: ${item.width}×${item.height}mm, ${item.gsm}gsm, ${item.binding}, Color: ${item.color}
+                        </div>
+                    `;
+                    validationList.appendChild(div);
+                });
+
+                validCount.textContent = `${validItems} Valid`;
+                invalidCount.textContent = `${invalidItems} Invalid`;
+            }
+
+            function processExcelFile(file) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                        const validations = jsonData.map(row => {
+                            const width = row.Width !== undefined ? row.Width : row['width'];
+                            const height = row.Height !== undefined ? row.Height : row['height'];
+                            const gsm = row.gsm !== undefined ? row.gsm : row['GSM'];
+                            const binding = row.Binding !== undefined ? row.Binding : row['binding'];
+                            const color = row.Color !== undefined ? row.Color : row['color'];
+                            
+                            return {
+                                isbn: row.ISBN || row['isbn'] || 'N/A',
+                                description: row.Description || row['description'] || 'No description',
+                                width: width,
+                                height: height,
+                                gsm: gsm,
+                                binding: binding,
+                                color: color,
+                                validation: validateSize(width, height, gsm, binding, color)
+                            };
+                        });
+
+                        displayResults(validations);
+                    } catch (error) {
+                        console.error('Error processing file:', error);
+                        alert('Error processing the Excel file. Please check the console for details.');
+                    }
+                };
+
+                reader.onerror = function(error) {
+                    console.error('Error reading file:', error);
+                    alert('Error reading the file. Please try again.');
+                };
+
+                reader.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percentLoaded = Math.round((e.loaded / e.total) * 100);
+                        updateProgress(percentLoaded);
+                    }
+                };
+
+                reader.readAsArrayBuffer(file);
+            }
+
+            // Drag and drop handlers
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file.type.includes('sheet') || file.name.match(/\.(xlsx|xls)$/i)) {
+                    processExcelFile(file);
+                } else {
+                    alert('Please upload an Excel file');
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    processExcelFile(file);
+                }
+            });
+
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                document.body.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+        });
+    </script>
+</body>
+</html>
