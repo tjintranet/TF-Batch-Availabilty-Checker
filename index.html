@@ -4,73 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Batch Trim Size Validator</title>
-    <!-- SheetJS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="css/styles.css" rel="stylesheet">
-
-      <!-- Favicon -->
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Required libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
-<body>
-    <div class="container my-5">
+<body class="bg-light">
+    <div class="container py-4">
         <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-white">
-                        <h4 class="card-title mb-0">Batch Trim Size Validator</h4>
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Batch Trim Size Validator</h4>
                     </div>
                     <div class="card-body">
                         <!-- File Upload Area -->
-                        <div class="drag-area mb-4" id="dropZone">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-file-earmark-spreadsheet mb-3 text-primary" viewBox="0 0 16 16">
-                                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V9H3V2a1 1 0 0 1 1-1h5.5v2zM3 12v-2h2v2H3zm3 0v-2h3v2H6zm4 0v-2h3v2h-3z"/>
-                            </svg>
-                            <p class="mb-2">Drag and drop Excel file here or</p>
-                            <div class="mb-3">
-                                <input type="file" id="fileInput" accept=".xlsx, .xls" class="d-none">
-                                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                                    Choose File
-                                </button>
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">Upload File</h5>
                             </div>
-                            <div class="small text-muted">
-                                <a href="examples/template.xlsx" download class="text-decoration-none">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
-                                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                                    </svg>
-                                    Download Example Template
-                                </a>
-                            </div>
-                            <div class="progress mt-3" id="progressBar">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
+                            <div class="card-body">
+                                <div class="drag-area text-center py-4" id="dropZone">
+                                    <i class="fas fa-file-excel fa-3x mb-3 text-primary"></i>
+                                    <p class="mb-2">Drag and drop Excel file here or</p>
+                                    <div class="mb-3">
+                                        <input type="file" id="fileInput" accept=".xlsx, .xls" class="d-none">
+                                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                                            <i class="fas fa-upload me-2"></i>Choose File
+                                        </button>
+                                    </div>
+                                    <div class="small text-muted">
+                                        <a href="examples/template.xlsx" download class="text-decoration-none">
+                                            <i class="fas fa-download me-1"></i>Download Example Template
+                                        </a>
+                                    </div>
+                                    <div class="progress mt-3" id="progressBar" style="display: none;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-<!-- Results Area -->
-<div id="results" style="display: none;">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">Validation Results</h5>
-        <div class="d-flex gap-2 align-items-center">
-            <button id="downloadResults" class="btn btn-sm btn-outline-primary me-2" style="display: none;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
-                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                </svg>
-                Download Results
-            </button>
-            <span class="badge bg-success" id="validCount">0 Valid</span>
-            <span class="badge bg-danger" id="invalidCount">0 Invalid</span>
+                        <!-- Results Area -->
+                        <div id="results" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Validation Results</h5>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <button id="downloadResults" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-download me-1"></i>Download Results
+                                    </button>
+                                    <span class="badge bg-success" id="validCount">0 Valid</span>
+                                    <span class="badge bg-danger" id="invalidCount">0 Invalid</span>
+                                </div>
+                            </div>
+                            <div class="validation-results" id="validationList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="validation-results" id="validationList"></div>
-</div>
 
-    <!-- Scripts -->
+    <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <!-- Load config before main script -->
     <script src="js/config.js"></script>
